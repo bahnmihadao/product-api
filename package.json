@@ -1,0 +1,31 @@
+{
+  "name": "product-api",
+  "version": "1.0.0",
+  "description": "RESTful Product API using Express and Mongoose",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bahnmihadao/product-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/bahnmihadao/product-api/issues"
+  },
+  "homepage": "https://github.com/bahnmihadao/product-api#readme",
+  "dependencies": {
+    "dotenv": "^18.0.3",
+    "express": "^5.2.1",
+    "mongoose": "^9.10.2"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  }
+}
