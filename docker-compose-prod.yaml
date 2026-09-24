@@ -1,0 +1,43 @@
+services:
+  nammongodb-prod:
+    image: mongo:8.0
+    container_name: nammongodb-prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand({ ping: 1 }).ok\" | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  product-api-prod:
+    image: ${DOCKERHUB_USERNAME:?Set DOCKERHUB_USERNAME}/product-api:${PRODUCT_API_TAG:-latest}
+    container_name: product-api-prod
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      MONGODB_URI: mongodb://nammongodb-prod:27017/productdb
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      nammongodb-prod:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  mongodb_data:
+    external: true
+    name: nammongodb_data

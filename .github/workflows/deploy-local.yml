@@ -1,0 +1,67 @@
+name: Deploy Docker Hub Image to Local Engine
+
+on:
+  workflow_run:
+    workflows:
+      - CD - Docker Hub
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: [self-hosted, windows, product-api]
+
+    steps:
+      - name: Checkout deployed revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Log in to Docker Hub
+        shell: pwsh
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+        run: |
+          $env:DOCKERHUB_TOKEN | docker login --username $env:DOCKERHUB_USERNAME --password-stdin
+
+      - name: Pull and start the published image
+        shell: pwsh
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          PRODUCT_API_TAG: sha-${{ github.event.workflow_run.head_sha }}
+        run: |
+          docker compose -f docker-compose-prod.yaml down --remove-orphans
+          docker compose -f docker-compose-prod.yaml pull
+          docker compose -f docker-compose-prod.yaml up -d
+
+      - name: Wait for local healthcheck
+        shell: pwsh
+        run: |
+          for ($attempt = 1; $attempt -le 30; $attempt++) {
+            $status = docker inspect --format '{{.State.Health.Status}}' product-api-prod 2>$null
+            Write-Host "attempt=$attempt api=$status"
+            if ($status -eq 'healthy') {
+              exit 0
+            }
+            Start-Sleep -Seconds 2
+          }
+
+          docker compose -f docker-compose-prod.yaml ps
+          docker compose -f docker-compose-prod.yaml logs --no-color
+          exit 1
+
+      - name: Verify deployed API
+        shell: pwsh
+        run: |
+          $response = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:3000/health
+          if ($response.StatusCode -ne 200) {
+            throw "Health endpoint returned HTTP $($response.StatusCode)"
+          }
+          Write-Host $response.Content
