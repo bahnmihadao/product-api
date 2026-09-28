@@ -35,6 +35,8 @@ jobs:
           DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
           PRODUCT_API_TAG: sha-${{ github.event.workflow_run.head_sha }}
         run: |
+          # Stop the development Compose stack so production can use ports 3000 and 27017.
+          docker compose down --remove-orphans
           docker compose -f docker-compose-prod.yaml down --remove-orphans
           docker compose -f docker-compose-prod.yaml pull
           docker compose -f docker-compose-prod.yaml up -d
