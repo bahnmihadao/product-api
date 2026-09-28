@@ -15,7 +15,7 @@ services:
       start_period: 10s
 
   product-api-prod:
-    image: ${DOCKERHUB_USERNAME:?Set DOCKERHUB_USERNAME}/product-api:${PRODUCT_API_TAG:-latest}
+    image: ${DOCKERHUB_USERNAME:-bahnmi0501}/product-api:${PRODUCT_API_TAG:-latest}
     container_name: product-api-prod
     restart: unless-stopped
     environment:
@@ -39,5 +39,4 @@ services:
 
 volumes:
   mongodb_data:
-    external: true
     name: nammongodb_data
